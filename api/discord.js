@@ -8,14 +8,18 @@ export default async function handler(req, res) {
   const signature = req.headers["x-signature-ed25519"];
   const timestamp = req.headers["x-signature-timestamp"];
 
-  // Read raw body as string
+  // Collect the raw request body
   let body = "";
   await new Promise((resolve) => {
     req.on("data", (chunk) => { body += chunk; });
     req.on("end", resolve);
   });
 
-  // Verify signature
+  if (!signature || !timestamp) {
+    return res.status(401).send("Missing signature headers");
+  }
+
+  // Verify the signature
   let isValid = false;
   try {
     isValid = verifyKey(body, signature, timestamp, process.env.DISCORD_PUBLIC_KEY);
@@ -38,7 +42,7 @@ export default async function handler(req, res) {
     return res.json({ type: 1 });
   }
 
-  // (Optional) Respond to /verify command for manual test
+  // Optional: reply to /verify command for manual test
   if (json.type === 2 && json.data && json.data.name === "verify") {
     return res.json({
       type: 4,
