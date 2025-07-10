@@ -8,7 +8,6 @@ export default async function handler(req, res) {
   const signature = req.headers["x-signature-ed25519"];
   const timestamp = req.headers["x-signature-timestamp"];
 
-  // Collect the raw request body
   let body = "";
   await new Promise((resolve) => {
     req.on("data", (chunk) => { body += chunk; });
@@ -19,7 +18,6 @@ export default async function handler(req, res) {
     return res.status(401).send("Missing signature headers");
   }
 
-  // Verify the signature
   let isValid = false;
   try {
     isValid = verifyKey(body, signature, timestamp, process.env.DISCORD_PUBLIC_KEY);
@@ -33,16 +31,15 @@ export default async function handler(req, res) {
   let json;
   try {
     json = JSON.parse(body);
-  } catch (e) {
+  } catch {
     return res.status(400).send("Bad Request");
   }
 
-  // Respond to Discord's PING (type 1)
   if (json.type === 1) {
     return res.json({ type: 1 });
   }
 
-  // Optional: reply to /verify command for manual test
+  // Optional: reply to /verify slash command for manual test
   if (json.type === 2 && json.data && json.data.name === "verify") {
     return res.json({
       type: 4,
